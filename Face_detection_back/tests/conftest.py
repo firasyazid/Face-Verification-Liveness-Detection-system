@@ -18,6 +18,7 @@ except ImportError:
 
 # Specifically handle the deepface import chain issue
 sys.modules["tensorflow.keras"] = MagicMock()
+sys.modules["tensorflow.keras.models"] = MagicMock()  # <--- Added this line
 sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
 

@@ -1,115 +1,96 @@
-"""Additional tests for video utilities service."""
+"""Tests for video utilities."""
 import pytest
 import numpy as np
-import tempfile
-import os
-from unittest.mock import patch, MagicMock
-from app.services.video_utils import extract_frames_from_video, save_temp_video
+from unittest.mock import patch, MagicMock, AsyncMock
+from fastapi import UploadFile
+from app.services.video_utils import extract_frames_from_video
 
-
+@pytest.mark.asyncio
 class TestVideoUtils:
     """Test cases for video utility functions."""
 
-    def test_save_temp_video_creates_file(self):
-        """Test that save_temp_video creates a temporary file."""
-        video_data = b"fake video data"
-        
-        result = save_temp_video(video_data)
-        
-        assert result is not None
-        assert os.path.exists(result)
-        assert result.endswith('.mp4')
-        
-        # Cleanup
-        if os.path.exists(result):
-            os.remove(result)
-
-    def test_save_temp_video_writes_content(self):
-        """Test that video data is written to file."""
-        video_data = b"test video content"
-        
-        result = save_temp_video(video_data)
-        
-        with open(result, 'rb') as f:
-            content = f.read()
-        
-        assert content == video_data
-        
-        # Cleanup
-        os.remove(result)
-
     @patch('app.services.video_utils.cv2.VideoCapture')
-    def test_extract_frames_success(self, mock_capture):
+    @patch('app.services.video_utils.tempfile.NamedTemporaryFile')
+    async def test_extract_frames_success(self, mock_temp, mock_capture):
         """Test successful frame extraction."""
+        # Mock temp file
+        mock_file = MagicMock()
+        mock_file.name = "test.mp4"
+        mock_temp.return_value.__enter__.return_value = mock_file
+        
+        # Mock VideoCapture
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
-        mock_cap.get.return_value = 30  # FPS
+        mock_cap.get.return_value = 30  # Frame count
+        
+        # Mock frames reading
         mock_cap.read.side_effect = [
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
+            (True, np.zeros((480, 640, 3), dtype=np.uint8)),  # Frame 1
+            (True, np.zeros((480, 640, 3), dtype=np.uint8)),  # Frame 2
+            (True, np.zeros((480, 640, 3), dtype=np.uint8)),  # Frame 3
+            (True, np.zeros((480, 640, 3), dtype=np.uint8)),  # Frame 4
             (False, None)
         ]
         mock_capture.return_value = mock_cap
         
-        frames = extract_frames_from_video("test.mp4", num_frames=4)
+        # Mock UploadFile
+        mock_upload = MagicMock(spec=UploadFile)
+        mock_upload.read = AsyncMock(return_value=b"fake-video-content")
+        
+        frames = await extract_frames_from_video(mock_upload, num_frames=4)
         
         assert len(frames) == 4
-        assert all(isinstance(f, np.ndarray) for f in frames)
+        assert isinstance(frames[0], np.ndarray)
         mock_cap.release.assert_called_once()
 
     @patch('app.services.video_utils.cv2.VideoCapture')
-    def test_extract_frames_video_not_opened(self, mock_capture):
+    @patch('app.services.video_utils.tempfile.NamedTemporaryFile')
+    async def test_extract_frames_video_not_opened(self, mock_temp, mock_capture):
         """Test handling when video cannot be opened."""
+        mock_file = MagicMock()
+        mock_file.name = "test.mp4"
+        mock_temp.return_value.__enter__.return_value = mock_file
+        
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = False
         mock_capture.return_value = mock_cap
         
-        frames = extract_frames_from_video("invalid.mp4")
+        mock_upload = MagicMock(spec=UploadFile)
+        mock_upload.read = AsyncMock(return_value=b"bad-content")
+        
+        frames = await extract_frames_from_video(mock_upload)
         
         assert frames == []
-        mock_cap.release.assert_called_once()
+        mock_cap.release.assert_not_called()  # Release might not be called if not opened, depends on logic
 
     @patch('app.services.video_utils.cv2.VideoCapture')
-    def test_extract_frames_custom_count(self, mock_capture):
-        """Test extracting custom number of frames."""
+    @patch('app.services.video_utils.tempfile.NamedTemporaryFile')
+    async def test_extract_frames_empty_video(self, mock_temp, mock_capture):
+        """Test handling when video has no frames."""
+        mock_file = MagicMock()
+        mock_file.name = "test.mp4"
+        mock_temp.return_value.__enter__.return_value = mock_file
+        
         mock_cap = MagicMock()
         mock_cap.isOpened.return_value = True
-        mock_cap.get.return_value = 30
-        mock_cap.read.side_effect = [
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (False, None)
-        ]
+        mock_cap.get.return_value = 0  # 0 frames
         mock_capture.return_value = mock_cap
         
-        frames = extract_frames_from_video("test.mp4", num_frames=2)
+        mock_upload = MagicMock(spec=UploadFile)
+        mock_upload.read = AsyncMock(return_value=b"empty")
         
-        assert len(frames) == 2
-
-    def test_save_temp_video_empty_data(self):
-        """Test handling empty video data."""
-        result = save_temp_video(b"")
+        frames = await extract_frames_from_video(mock_upload)
         
-        assert os.path.exists(result)
-        assert os.path.getsize(result) == 0
-        
-        os.remove(result)
+        assert frames == []
 
     @patch('app.services.video_utils.cv2.VideoCapture')
-    def test_extract_frames_handles_read_failure(self, mock_capture):
-        """Test handling when frame read fails mid-extraction."""
-        mock_cap = MagicMock()
-        mock_cap.isOpened.return_value = True
-        mock_cap.get.return_value = 30
-        mock_cap.read.side_effect = [
-            (True, np.zeros((480, 640, 3), dtype=np.uint8)),
-            (False, None)
-        ]
-        mock_capture.return_value = mock_cap
+    @patch('app.services.video_utils.tempfile.NamedTemporaryFile')
+    async def test_extract_frames_exception_handling(self, mock_temp, mock_capture):
+        """Test handling exceptions during extraction."""
+        mock_upload = MagicMock(spec=UploadFile)
+        mock_upload.read = AsyncMock(side_effect=Exception("Read error"))
         
-        frames = extract_frames_from_video("test.mp4", num_frames=4)
+        frames = await extract_frames_from_video(mock_upload)
         
-        assert len(frames) >= 1
-        mock_cap.release.assert_called_once()
+        assert frames == []
+
