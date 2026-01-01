@@ -150,29 +150,6 @@ jobs:
           echo "Docker image built successfully"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
-  deploy-production:
-    runs-on: ubuntu-latest
-    name: Deploy to Production
-    needs: build-docker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    environment:
-      name: production
-      url: https://dashboard.render.com
-
-    steps:
-      - name: Trigger Render Deployment
-        run: |
-          echo "Triggering deployment hook..."
-          # This triggers the deployment on Render
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-            echo "Deployment triggered successfully!"
-          else
-            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
-            echo "Please add this secret in GitHub Repo Settings -> Environments -> production"
-            exit 1
-          fi
-
   publish-results:
     runs-on: ubuntu-latest
     name: Publish Results
