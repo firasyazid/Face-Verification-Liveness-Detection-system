@@ -1,7 +1,7 @@
 """Unit tests for logger module."""
 import pytest
 import logging
-from app.logger import get_logger
+from app.logger import get_logger, setup_logging
 
 
 class TestLogger:
@@ -14,17 +14,21 @@ class TestLogger:
         assert isinstance(logger, logging.Logger)
         assert logger.name == __name__
 
-    def test_logger_has_handlers(self):
-        """Test that logger has handlers configured."""
+    def test_logger_has_handlers_after_setup(self):
+        """Test that logger has handlers configured after setup."""
+        setup_logging()
         logger = get_logger("test_module")
         
-        assert len(logger.handlers) > 0
+        # Root logger should have handlers
+        root_logger = logging.getLogger()
+        assert len(root_logger.handlers) > 0
 
-    def test_logger_level(self):
-        """Test logger level configuration."""
-        logger = get_logger("test_level")
+    def test_logger_level_after_setup(self):
+        """Test logger level configuration after setup."""
+        setup_logging()
+        root_logger = logging.getLogger()
         
-        assert logger.level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR]
+        assert root_logger.level in [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR]
 
     def test_multiple_loggers_different_names(self):
         """Test creating multiple loggers with different names."""
@@ -37,6 +41,7 @@ class TestLogger:
 
     def test_logger_can_log_messages(self):
         """Test that logger can log messages without errors."""
+        setup_logging()
         logger = get_logger("test_logging")
         
         try:
@@ -46,3 +51,4 @@ class TestLogger:
             logger.error("Test error message")
         except Exception as e:
             pytest.fail(f"Logger raised exception: {e}")
+
