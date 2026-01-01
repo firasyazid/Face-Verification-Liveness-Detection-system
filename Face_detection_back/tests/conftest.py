@@ -21,6 +21,21 @@ sys.modules["tensorflow.keras.models"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
 
+# 3. Mock OpenCV (cv2)
+# Prevents 'ImportError: libGL.so.1: cannot open shared object file'
+try:
+    import cv2
+except ImportError:
+    sys.modules["cv2"] = MagicMock()
+    # Ensure specific cv2 constants/attributes exist on the mock
+    cv2_mock = MagicMock()
+    cv2_mock.VideoCapture = MagicMock()
+    cv2_mock.CAP_PROP_FRAME_COUNT = 7
+    cv2_mock.CAP_PROP_POS_FRAMES = 1
+    cv2_mock.ROTATE_90_CLOCKWISE = 0
+    cv2_mock.COLOR_BGR2RGB = 4
+    sys.modules["cv2"] = cv2_mock
+
 import pytest
 import os
 from pathlib import Path
