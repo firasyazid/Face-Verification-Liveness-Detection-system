@@ -1,0 +1,60 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+test-results.xml
+.tox/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Debug images
+debug_images/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff cache
+.ruff_cache/
+
+# Docker
+.dockerignore
+
+# Node (for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
