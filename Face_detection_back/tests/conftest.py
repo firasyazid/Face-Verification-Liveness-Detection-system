@@ -2,16 +2,18 @@ import sys
 from unittest.mock import MagicMock
 # 1. Mock DeepFace
 deepface_mock = MagicMock()
-# Configure verify to return a success dict by default
-deepface_mock.verify.return_value = {
+# Configure DeepFace class and its verify method
+deepface_class_mock = MagicMock()
+deepface_class_mock.verify.return_value = {
     "verified": True, 
     "distance": 0.1, 
     "threshold": 0.4,
     "model": "Facenet512",
     "similarity_metric": "cosine"
 }
+deepface_mock.DeepFace = deepface_class_mock
 sys.modules["deepface"] = deepface_mock
-sys.modules["deepface.DeepFace"] = deepface_mock
+sys.modules["deepface.DeepFace"] = deepface_class_mock
 
 # 2. Mock TensorFlow and Keras
 mock_tf = MagicMock()
@@ -22,7 +24,6 @@ sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
 
 # 3. Mock OpenCV (cv2)
-# Prevents 'ImportError: libGL.so.1: cannot open shared object file'
 try:
     import cv2
 except ImportError:
