@@ -171,12 +171,14 @@ jobs:
 
     steps:
       - name: Download Test Results
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: test-results
           path: artifacts/
 
       - name: Download Coverage Report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
@@ -196,3 +198,7 @@ jobs:
           echo "- Tests: PASSED" >> $GITHUB_STEP_SUMMARY
           echo "- Linting: PASSED" >> $GITHUB_STEP_SUMMARY
           echo "- Coverage: GENERATED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "Auto-deployment to Render is enabled and will be triggered automatically on commit." >> $GITHUB_STEP_SUMMARY
+          echo "Monitor deployment at: https://dashboard.render.com" >> $GITHUB_STEP_SUMMARY
