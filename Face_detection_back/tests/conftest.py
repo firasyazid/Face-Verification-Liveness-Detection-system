@@ -8,6 +8,7 @@ sys.modules["deepface"] = MagicMock()
 sys.modules["deepface.DeepFace"] = MagicMock()
 
 # 2. Mock TensorFlow and Keras
+mock_tf = MagicMock()
 sys.modules["tensorflow"] = mock_tf
 sys.modules["tensorflow.keras"] = MagicMock()
 sys.modules["tensorflow.keras.models"] = MagicMock()
