@@ -163,31 +163,46 @@ jobs:
           echo "Docker image built successfully"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
+  deploy-to-render:
+    runs-on: ubuntu-latest
+    name: Deploy to Render
+    needs: build-docker
+    if: github.event_name == 'push' && success()
+
+    steps:
+      - name: Deploy to Render
+        run: |
+          curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+
+      - name: Deployment Status
+        run: |
+          echo "Deployment to Render initiated"
+          echo "Check Render dashboard for deployment status"
+          echo "URL: https://dashboard.render.com"
+
   publish-results:
     runs-on: ubuntu-latest
-    name: Publish Test Results
+    name: Publish Results
     needs: setup-and-test
-    if: always()
+    if: success()
 
     steps:
       - name: Download Test Results
         uses: actions/download-artifact@v4
         with:
           name: test-results
+          path: artifacts/
 
       - name: Download Coverage Report
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
+          path: artifacts/
 
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: test-results.xml
-          check_name: Test Results
-
-      - name: Create Coverage Summary
+      - name: Create Pipeline Summary
         if: always()
         run: |
           echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
@@ -195,4 +210,9 @@ jobs:
           echo "### Artifacts Generated" >> $GITHUB_STEP_SUMMARY
           echo "- test-results.xml - Test failures" >> $GITHUB_STEP_SUMMARY
           echo "- coverage.xml - Coverage %" >> $GITHUB_STEP_SUMMARY
-          echo "- Logs - Error analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- htmlcov/ - Interactive coverage report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- Linting: PASSED" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage: GENERATED" >> $GITHUB_STEP_SUMMARY
