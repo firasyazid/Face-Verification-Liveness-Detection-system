@@ -1,4 +1,26 @@
-"""Conftest for pytest configuration and fixtures."""
+import sys
+from unittest.mock import MagicMock
+
+# Mock deepface and tensorflow if they fail to import (common in CI)
+try:
+    import deepface
+except ImportError:
+    sys.modules["deepface"] = MagicMock()
+    sys.modules["deepface.DeepFace"] = MagicMock()
+
+try:
+    import tensorflow
+except ImportError:
+    sys.modules["tensorflow"] = MagicMock()
+    sys.modules["tensorflow.keras"] = MagicMock()
+    sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
+    sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
+
+# Specifically handle the deepface import chain issue
+sys.modules["tensorflow.keras"] = MagicMock()
+sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
+sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
+
 import pytest
 import os
 from pathlib import Path
