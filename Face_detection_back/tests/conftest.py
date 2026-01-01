@@ -1,11 +1,17 @@
 import sys
 from unittest.mock import MagicMock
-
-
-
 # 1. Mock DeepFace
-sys.modules["deepface"] = MagicMock()
-sys.modules["deepface.DeepFace"] = MagicMock()
+deepface_mock = MagicMock()
+# Configure verify to return a success dict by default
+deepface_mock.verify.return_value = {
+    "verified": True, 
+    "distance": 0.1, 
+    "threshold": 0.4,
+    "model": "Facenet512",
+    "similarity_metric": "cosine"
+}
+sys.modules["deepface"] = deepface_mock
+sys.modules["deepface.DeepFace"] = deepface_mock
 
 # 2. Mock TensorFlow and Keras
 mock_tf = MagicMock()
