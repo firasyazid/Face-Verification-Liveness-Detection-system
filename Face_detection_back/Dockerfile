@@ -28,18 +28,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder
-COPY --from=builder --chown=1000:1000 /root/.local /home/appuser/.local
+COPY --from=builder /root/.local /root/.local
+
+# Create non-root user for security FIRST
+RUN useradd -m -u 1000 appuser
 
 # Make sure scripts in .local are usable
-ENV PATH=/home/appuser/.local/bin:$PATH
+ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /home/appuser
+# Give appuser permission to use pip packages
+RUN chown -R appuser:appuser /root/.local
+
 USER appuser
 
 # Health check

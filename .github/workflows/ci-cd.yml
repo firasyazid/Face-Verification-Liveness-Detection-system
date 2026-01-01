@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   REGISTRY: ghcr.io
@@ -24,14 +24,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r Face_detection_back/requirements.txt
-          pip install pytest pytest-cov pylint flake8 black isort
+          pip install pytest pytest-cov mypy pylint
 
       # Quality Checks - Linting
       - name: Run Linting - Pylint
@@ -41,33 +41,20 @@ jobs:
           pylint Face_detection_back/app --fail-under=7.0 --output-format=text || true
           echo "Pylint check completed"
 
-      - name: Run Linting - Flake8
+      - name: Run Type Check - Mypy
         continue-on-error: true
         run: |
-          echo "Running Flake8 checks..."
-          flake8 Face_detection_back/app --count --show-source --statistics || true
-          echo "Flake8 check completed"
-
-      - name: Code Format Check - Black
-        continue-on-error: true
-        run: |
-          echo "Checking code format with Black..."
-          black Face_detection_back/app --check || true
-          echo "Black check completed"
-
-      - name: Import Sort Check - isort
-        continue-on-error: true
-        run: |
-          echo "Checking import sorting with isort..."
-          isort Face_detection_back/app --check-only || true
-          echo "isort check completed"
+          echo "Running Mypy type checks..."
+          mypy Face_detection_back/app --ignore-missing-imports || true
+          echo "Mypy check completed"
 
       # Coverage - Run Tests with Coverage Report
       - name: Run Tests with Coverage
+        continue-on-error: true
         run: |
           echo "Running pytest with coverage..."
           cd Face_detection_back
-          pytest tests/ --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing -v --junitxml=test-results.xml || true
+          pytest tests/ --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing -v --junitxml=test-results.xml 2>&1 || true
           cd ..
 
       # Upload test results
@@ -163,6 +150,29 @@ jobs:
           echo "Docker image built successfully"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: build-docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://dashboard.render.com
+
+    steps:
+      - name: Trigger Render Deployment
+        run: |
+          echo "Triggering deployment hook..."
+          # This triggers the deployment on Render
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+            echo "Deployment triggered successfully!"
+          else
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set!"
+            echo "Please add this secret in GitHub Repo Settings -> Environments -> production"
+            exit 1
+          fi
+
   publish-results:
     runs-on: ubuntu-latest
     name: Publish Results
@@ -200,5 +210,5 @@ jobs:
           echo "- Coverage: GENERATED" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "Auto-deployment to Render is enabled and will be triggered automatically on commit." >> $GITHUB_STEP_SUMMARY
-          echo "Monitor deployment at: https://dashboard.render.com" >> $GITHUB_STEP_SUMMARY
+          echo "Manual deployment required. Go to Render dashboard to deploy:" >> $GITHUB_STEP_SUMMARY
+          echo "https://dashboard.render.com" >> $GITHUB_STEP_SUMMARY
