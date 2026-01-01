@@ -163,26 +163,6 @@ jobs:
           echo "Docker image built successfully"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
 
-  deploy-to-render:
-    runs-on: ubuntu-latest
-    name: Deploy to Render
-    needs: build-docker
-    if: github.event_name == 'push' && success()
-
-    steps:
-      - name: Deploy to Render
-        run: |
-          curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-
-      - name: Deployment Status
-        run: |
-          echo "Deployment to Render initiated"
-          echo "Check Render dashboard for deployment status"
-          echo "URL: https://dashboard.render.com"
-
   publish-results:
     runs-on: ubuntu-latest
     name: Publish Results
