@@ -29,23 +29,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /root/.local
-
-# Create non-root user for security FIRST
+# Create non-root user FIRST
 RUN useradd -m -u 1000 appuser
 
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Copy Python dependencies to appuser's home directory
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+# Set PATH to use appuser's local bin
+ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Copy application code
+# Copy application code with correct ownership
 COPY --chown=appuser:appuser . .
 
-# Give appuser permission to use pip packages
-RUN chown -R appuser:appuser /root/.local
-
+# Switch to non-root user
 USER appuser
 
 # Health check
