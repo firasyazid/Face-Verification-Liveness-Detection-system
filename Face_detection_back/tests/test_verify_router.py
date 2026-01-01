@@ -29,7 +29,7 @@ class TestVerifyRouter:
             "live_video": ("video.mp4", b"fake video", "video/mp4")
         }
         
-        response = client.post("/api/verify_identity", files=files)
+        response = client.post("/verify_identity", files=files)
         
         assert response.status_code == 200
         data = response.json()
@@ -44,7 +44,7 @@ class TestVerifyRouter:
              "profile_image": ("", b"", ""), 
              "live_video": ("", b"", "")
         }
-        response = client.post("/api/verify_identity", files=files)
+        response = client.post("/verify_identity", files=files)
         # Verify.py line 45 checks for filename presence
         assert response.status_code == 400
 
@@ -61,7 +61,7 @@ class TestVerifyRouter:
             "live_video": ("video.mp4", b"fake video", "video/mp4")
         }
         
-        response = client.post("/api/verify_identity", files=files)
+        response = client.post("/verify_identity", files=files)
         
         assert response.status_code == 200
         data = response.json()
@@ -88,7 +88,7 @@ class TestVerifyRouter:
             "live_video": ("video.mp4", b"fake video", "video/mp4")
         }
         
-        response = client.post("/api/verify_identity", files=files)
+        response = client.post("/verify_identity", files=files)
         
         assert response.status_code == 200
         data = response.json()
