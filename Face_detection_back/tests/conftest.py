@@ -1,24 +1,16 @@
 import sys
 from unittest.mock import MagicMock
 
-# Mock deepface and tensorflow if they fail to import (common in CI)
-try:
-    import deepface
-except ImportError:
-    sys.modules["deepface"] = MagicMock()
-    sys.modules["deepface.DeepFace"] = MagicMock()
 
-try:
-    import tensorflow
-except ImportError:
-    sys.modules["tensorflow"] = MagicMock()
-    sys.modules["tensorflow.keras"] = MagicMock()
-    sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
-    sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
 
-# Specifically handle the deepface import chain issue
+# 1. Mock DeepFace
+sys.modules["deepface"] = MagicMock()
+sys.modules["deepface.DeepFace"] = MagicMock()
+
+# 2. Mock TensorFlow and Keras
+sys.modules["tensorflow"] = mock_tf
 sys.modules["tensorflow.keras"] = MagicMock()
-sys.modules["tensorflow.keras.models"] = MagicMock()  # <--- Added this line
+sys.modules["tensorflow.keras.models"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing"] = MagicMock()
 sys.modules["tensorflow.keras.preprocessing.image"] = MagicMock()
 
