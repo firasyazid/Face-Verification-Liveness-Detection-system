@@ -31,7 +31,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r Face_detection_back/requirements.txt
-          pip install pytest pytest-cov mypy pylint
 
       # Quality Checks - Linting
       - name: Run Linting - Pylint
@@ -96,10 +95,81 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+  ai-quality-gate:
+    runs-on: ubuntu-latest
+    name: AI Release Manager (Audit Mode)
+    needs: setup-and-test
+    continue-on-error: true # <--- Audit Mode: Won't stop pipeline on REJECTION
+
+    steps:
+      - name: Checkout Main Code
+        uses: actions/checkout@v4
+        with:
+          path: main-repo
+
+      - name: Checkout AI Tools
+        uses: actions/checkout@v4
+        with:
+          repository: firasyazid/AI-release-Manager--MCP-
+          path: ai-tools
+          ref: master
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install AI Dependencies
+        run: |
+          pip install -r ai-tools/requirements.txt
+
+      - name: Download Test Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+          path: artifacts
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: artifacts
+
+      - name: Run AI Analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}/ai-tools
+        run: |
+          # Move artifacts to flat structure if needed, or let script handle it
+          # The script expects test-results.xml and coverage.xml in artifacts/
+
+          # Debug: Show structure
+          ls -R artifacts
+
+          # Run the Agent
+          python ai-tools/src/client.py --artifacts ./artifacts --repo-root ./main-repo
+
+      - name: Publish AI Summary
+        if: always()
+        run: |
+          if [ -f "artifacts/release_summary.md" ]; then
+            echo "## 🤖 AI Release Decision" >> $GITHUB_STEP_SUMMARY
+            cat artifacts/release_summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload AI Decision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-decision
+          path: |
+            artifacts/release_summary.md
+            artifacts/release_decision.json
+
   build-docker:
     runs-on: ubuntu-latest
     name: Build Docker Image
-    needs: setup-and-test
+    needs: [setup-and-test, ai-quality-gate] # Depends on the gate (even if gate fails)
     if: github.event_name == 'push'
 
     permissions:
