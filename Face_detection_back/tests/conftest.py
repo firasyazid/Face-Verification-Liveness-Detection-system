@@ -1,8 +1,12 @@
 import sys
 from unittest.mock import MagicMock
+import pytest
+from pathlib import Path
+
+# --- Mock Heavy ML Dependencies for CI ---
+
 # 1. Mock DeepFace
 deepface_mock = MagicMock()
-# Configure DeepFace class and its verify method
 deepface_class_mock = MagicMock()
 deepface_class_mock.verify.return_value = {
     "verified": True, 
@@ -28,7 +32,6 @@ try:
     import cv2
 except ImportError:
     sys.modules["cv2"] = MagicMock()
-    # Ensure specific cv2 constants/attributes exist on the mock
     cv2_mock = MagicMock()
     cv2_mock.VideoCapture = MagicMock()
     cv2_mock.CAP_PROP_FRAME_COUNT = 7
@@ -36,10 +39,6 @@ except ImportError:
     cv2_mock.ROTATE_90_CLOCKWISE = 0
     cv2_mock.COLOR_BGR2RGB = 4
     sys.modules["cv2"] = cv2_mock
-
-import pytest
-import os
-from pathlib import Path
 
 
 @pytest.fixture(scope="session")

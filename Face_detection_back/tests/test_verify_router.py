@@ -46,7 +46,6 @@ class TestVerifyRouter:
         }
         response = client.post("/verify_identity", files=files)
         
-        
         assert response.status_code in [400, 422]
 
     @patch('app.routers.verify.verify_faces')
